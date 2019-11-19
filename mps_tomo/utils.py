@@ -16,3 +16,16 @@ def pauli_group(num_qubits):
         return reduce(np.kron, (PAULIS[i] for i in indices))
 
     return (pauli_prod(i) for i in range(4 ** num_qubits))
+
+
+def kron_embed(qubit, op, qubits):
+    left_size = 2 ** qubit
+    op_size = np.size(op, axis=0)
+    right_size = (2 ** qubits) // (left_size * op_size)
+
+    left, right = (
+        np.eye(left_size, dtype=np.complex128),
+        np.eye(right_size, dtype=np.complex128),
+    )
+
+    return np.kron(np.kron(left, op), right)
