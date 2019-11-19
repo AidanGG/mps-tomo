@@ -1,10 +1,8 @@
-from functools import reduce
-
 import numpy as np
 from numpy.testing import assert_allclose
 from qiskit.quantum_info import random_density_matrix
 
-from mps_tomo.uncert import pauli_proj, R_hat, iteration
+from mps_tomo.uncert import R_hat, iteration, pauli_proj
 from mps_tomo.utils import pauli_group
 
 
@@ -14,9 +12,7 @@ def test_pauli_proj():
     TOL = 100 * np.spacing(np.complex128(1.0).real)
 
     dens_mat = random_density_matrix(2 ** NUM_QUBITS, seed=SEED)
-    reconstructed = reduce(
-        np.add, (pauli_proj(dens_mat, p) for p in pauli_group(NUM_QUBITS))
-    )
+    reconstructed = sum(pauli_proj(dens_mat, p) for p in pauli_group(NUM_QUBITS))
 
     assert_allclose(reconstructed, dens_mat, rtol=0.0, atol=TOL)
 
@@ -39,13 +35,13 @@ def test_R_hat():
 def test_iteration():
     NUM_QUBITS = 5
     SEED = 7777
-    TOL = 0.15
+    TOL = 0.21
     K = 2
 
     np.random.seed(SEED)
 
     dim = 2 ** NUM_QUBITS
-    state = np.zeros((dim), dtype=np.complex128)
+    state = np.zeros(dim, dtype=np.complex128)
     for i in range(NUM_QUBITS):
         state[1 << i] = np.random.normal()
     state /= np.linalg.norm(state)
