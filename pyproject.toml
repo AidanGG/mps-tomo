@@ -10,6 +10,8 @@ repository = "https://github.com/AidanGG/mps_tomo"
 
 [tool.poetry.dependencies]
 python = "^3.7"
+numpy = "^1.17"
+qiskit = "^0.13.0"
 
 [tool.poetry.dev-dependencies]
 black = {version = "^19.10-beta.0", allows-prereleases = true}
