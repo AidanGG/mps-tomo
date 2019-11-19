@@ -6,11 +6,11 @@ from mps_tomo.utils import kron_embed, pauli_group
 
 
 def pauli_proj(dens_mat, pauli_prod):
-    return np.trace(dens_mat @ pauli_prod) * pauli_prod / np.size(dens_mat, 0)
+    return np.einsum("ij,ji", dens_mat, pauli_prod) * pauli_prod / np.size(dens_mat, 0)
 
 
 def R_hat(sigmas, num_qubits):
-    return reduce(np.add, (kron_embed(*i, num_qubits) for i in enumerate(sigmas)))
+    return sum(kron_embed(*i, num_qubits) for i in enumerate(sigmas))
 
 
 def iteration(k, sigmas, num_qubits, max_its=100, delta=0.1):
