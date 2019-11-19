@@ -35,7 +35,7 @@ def test_R_hat():
 def test_iteration():
     NUM_QUBITS = 5
     SEED = 7777
-    TOL = 0.21
+    TOL = 0.15
     K = 2
 
     np.random.seed(SEED)
