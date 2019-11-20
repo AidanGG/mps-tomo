@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Entry for Qiskit Camp Asia 2019"
 license = "Apache-2.0"
 authors = []
-readme = "README.rst"
+readme = "README.md"
 homepage = "https://github.com/qiskit-community/qiskit-camp-asia-19/issues/35"
 repository = "https://github.com/AidanGG/mps_tomo"
 
