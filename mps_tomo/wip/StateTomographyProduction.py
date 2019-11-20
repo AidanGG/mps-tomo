@@ -10,7 +10,7 @@ from qiskit.providers.aer.extensions import *
 from qiskit import IBMQ
 
 
-class tomographicConstruction():
+class tomographicConstruction:
     """Class to implement the tomographic circuits necessary for MPS reconstruction
 
     Initialisation:
@@ -25,15 +25,17 @@ class tomographicConstruction():
         Hardware on which the circuits are to be run. Defaults to Aer.get_backend('qasm_simulator')
     """
 
-
-
-    def __init__(self,R,nQ,initial_circuit,backend=Aer.get_backend('qasm_simulator')):
+    def __init__(
+        self, R, nQ, initial_circuit, backend=Aer.get_backend("qasm_simulator")
+    ):
         self.R = R
         self.nQ = nQ
         self.initial_circuit = initial_circuit
-        self.backend=backend
+        self.backend = backend
 
-    def collect_noisy_tomography_data(self,noise_model,coupling_map,returnFull=False,method='cvx'):
+    def collect_noisy_tomography_data(
+        self, noise_model, coupling_map, returnFull=False, method="cvx"
+    ):
 
         K = int(np.ceil(np.log2(self.R)) + 1)
         nDMs = self.nQ - K + 1
@@ -43,36 +45,43 @@ class tomographicConstruction():
         # Get the basis gates for the noise model
         basis_gates = noise_model.basis_gates
 
-
-
         # Select the QasmSimulator from the Aer provider
-        simulator = Aer.get_backend('qasm_simulator')
+        simulator = Aer.get_backend("qasm_simulator")
 
         for i in range(nDMs):
-            tomography_circuits = state_tomography_circuits(self.initial_circuit, q[i:i+K])
-            result = execute(tomography_circuits, simulator,
-                               noise_model=noise_model,
-                               coupling_map=coupling_map,
-                               basis_gates=basis_gates,shots=8192).result()
+            tomography_circuits = state_tomography_circuits(
+                self.initial_circuit, q[i : i + K]
+            )
+            result = execute(
+                tomography_circuits,
+                simulator,
+                noise_model=noise_model,
+                coupling_map=coupling_map,
+                basis_gates=basis_gates,
+                shots=8192,
+            ).result()
             state_tom = StateTomographyFitter(result, tomography_circuits)
             DM = state_tom.fit(method=method)
             DM_list.append(DM)
-        if(returnFull):
+        if returnFull:
             tomography_circuits = state_tomography_circuits(self.initial_circuit, q)
-            result = execute(tomography_circuits, simulator,
-                               noise_model=noise_model,
-                               coupling_map=coupling_map,
-                               basis_gates=basis_gates,shots=8192,
-                               backend_options={'method': 'density_matrix'}).result()
+            result = execute(
+                tomography_circuits,
+                simulator,
+                noise_model=noise_model,
+                coupling_map=coupling_map,
+                basis_gates=basis_gates,
+                shots=8192,
+                backend_options={"method": "density_matrix"},
+            ).result()
             state_tom = StateTomographyFitter(result, tomography_circuits)
             full_DM = state_tom.fit(method=method)
-        if(returnFull):
-            return((DM_list,full_DM))
+        if returnFull:
+            return (DM_list, full_DM)
         else:
             return DM_list
 
-
-    def collect_true_noisy_dm(self,noise_model,coupling_map):
+    def collect_true_noisy_dm(self, noise_model, coupling_map):
 
         K = int(np.ceil(np.log2(self.R)) + 1)
         nDMs = self.nQ - K + 1
@@ -83,17 +92,23 @@ class tomographicConstruction():
         basis_gates = noise_model.basis_gates
 
         # Select the QasmSimulator from the Aer provider
-        simulator = Aer.get_backend('qasm_simulator')
+        simulator = Aer.get_backend("qasm_simulator")
 
-        self.initial_circuit.snapshot_density_matrix('final')
+        self.initial_circuit.snapshot_density_matrix("final")
 
-        result = execute(self.initial_circuit, Aer.get_backend('qasm_simulator'),noise_model=noise_model,
-                            coupling_map=coupling_map, basis_gates=basis_gates).result()
+        result = execute(
+            self.initial_circuit,
+            Aer.get_backend("qasm_simulator"),
+            noise_model=noise_model,
+            coupling_map=coupling_map,
+            basis_gates=basis_gates,
+        ).result()
 
-        tmp = np.array(result.data(0)['snapshots']['density_matrix']['final'][0]['value'])
-        DM = tmp[:,:,0] + 1.j*tmp[:,:,1]
+        tmp = np.array(
+            result.data(0)["snapshots"]["density_matrix"]["final"][0]["value"]
+        )
+        DM = tmp[:, :, 0] + 1.0j * tmp[:, :, 1]
         return DM
-
 
     def collect_tomography_data(self):
         K = int(np.ceil(np.log2(self.R)) + 1)
@@ -101,38 +116,45 @@ class tomographicConstruction():
         DM_list = []
         q = self.initial_circuit.qregs[0]
         for i in range(nDMs):
-            tomography_circuits = state_tomography_circuits(self.initial_circuit, q[i:i+K])
-            job = execute(tomography_circuits, self.backend, shots=8192, optimization_level=0)
+            tomography_circuits = state_tomography_circuits(
+                self.initial_circuit, q[i : i + K]
+            )
+            job = execute(
+                tomography_circuits, self.backend, shots=8192, optimization_level=0
+            )
             result = job.result()
             state_tom = StateTomographyFitter(result, tomography_circuits)
-            DM = state_tom.fit(method='cvx')
+            DM = state_tom.fit(method="cvx")
             DM_list.append(DM)
         self.DM_list = DM_list
         return DM_list
+
 
 def create_GHZ(nQ):
     q = QuantumRegister(nQ)
     circuit = QuantumCircuit(q)
     circuit.h(q[0])
-    for i in range(nQ-1):
-        circuit.cx(q[i],q[i+1])
+    for i in range(nQ - 1):
+        circuit.cx(q[i], q[i + 1])
     return circuit
 
+
 def W_state(nQ):
-    def B_p(circ,p,q1,q2):
+    def B_p(circ, p, q1, q2):
         theta = np.arcsin(np.sqrt(p))
-        circ.u3(-theta,0,0,q2)
-        circ.cx(q1,q2)
-        circ.u3(theta,0,0,q2)
-        circ.cx(q2,q1)
+        circ.u3(-theta, 0, 0, q2)
+        circ.cx(q1, q2)
+        circ.u3(theta, 0, 0, q2)
+        circ.cx(q2, q1)
+
     q = QuantumRegister(nQ)
-    #c = ClassicalRegister(nQ)
-    #circuit = QuantumCircuit(q,c)
+    # c = ClassicalRegister(nQ)
+    # circuit = QuantumCircuit(q,c)
     circuit = QuantumCircuit(q)
     circuit.x(q[0])
-    for i in range(nQ-1):
-        B_p(circuit,1/(nQ-i),q[i],q[i+1])
-    #circuit.measure(q,c)
+    for i in range(nQ - 1):
+        B_p(circuit, 1 / (nQ - i), q[i], q[i + 1])
+    # circuit.measure(q,c)
     return circuit
 
 
@@ -166,7 +188,7 @@ def partial_trace(rho, keep, dims, optimize=False):
     Nkeep = np.prod(dims[keep])
 
     idx1 = [i for i in range(Ndim)]
-    idx2 = [Ndim+i if i in keep else i for i in range(Ndim)]
-    rho_a = rho.reshape(np.tile(dims,2))
-    rho_a = np.einsum(rho_a, idx1+idx2, optimize=optimize)
+    idx2 = [Ndim + i if i in keep else i for i in range(Ndim)]
+    rho_a = rho.reshape(np.tile(dims, 2))
+    rho_a = np.einsum(rho_a, idx1 + idx2, optimize=optimize)
     return rho_a.reshape(Nkeep, Nkeep)
